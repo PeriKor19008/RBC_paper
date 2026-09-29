@@ -1,0 +1,11 @@
+joblib
+matplotlib
+mysql-connector-python
+numpy
+pandas
+reportlab
+scikit_learn
+seaborn
+scikit-image
+sympy
+torch

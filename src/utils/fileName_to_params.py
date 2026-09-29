@@ -11,3 +11,7 @@ def file_name_to_params(file_name):
 
 
 
+if __name__ == '__main__':
+    params = []
+    params = file_name_to_params("50_068472039571a.f06")
+    print(params)

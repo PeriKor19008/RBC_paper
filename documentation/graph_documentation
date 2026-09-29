@@ -1,0 +1,52 @@
+MODEL EVALUATION PLOTS: A QUICK REFERENCE GUIDE
+-----------------------------------------------
+This document provides a summary of the four primary diagnostic plots used to evaluate the performance of the regression model predicting Red Blood Cell (RBC) properties.
+
+1. PERCENTAGE ERROR BAR CHART
+-----------------------------------------------
+Function: Provides a high-level summary of the model's accuracy and stability across all four predicted properties (diameter, thickness, ratio, refractive index).
+
+How to Read it:
+- Blue Bar (Avg |Error|): Represents the Mean Absolute Percentage Error. A lower bar indicates better overall accuracy.
+- Orange Bar (Max |Error|): Represents the worst single prediction the model made across the entire test dataset.
+- X-Axis Labels (+/- Std Dev): The value in the parenthesis under the property name is the Standard Deviation of the error. A small standard deviation means the model is highly consistent; a large one means the error fluctuates wildly from image to image.
+
+
+2. TRUE VS. PREDICTED SCATTER PLOT
+-----------------------------------------------
+Function: Visualizes the direct correlation between the ground truth (actual values) and the model's predictions. It is the best tool for spotting systematic biases.
+
+How to Read it:
+- The Red Dashed Line (y = x): This is the "Line of Perfect Agreement". If the model were 100% accurate, every single prediction would land exactly on this line.
+- The Dots: Each dot represents one tested image.
+
+Interpretation:
+- Dots tightly hugging the red line indicate high accuracy.
+- If a cluster of dots sits consistently above the red line, the model is systematically overestimating that property.
+- If dots sit consistently below the line, the model is underestimating.
+- Dots floating far away from the line are your outliers.
+
+
+3. ERROR DISTRIBUTION BOXPLOT
+-----------------------------------------------
+Function: Displays the statistical spread of the percentage errors, highlighting the median and isolating extreme outliers.
+
+How to Read it:
+- The Red Line (Median): The middle value of all errors. Half the images had a lower error than this, and half had a higher error.
+- The Blue Box (Interquartile Range - IQR): Contains the middle 50% of your data. A narrow box means most predictions have very similar error rates.
+- The Whiskers (Black Lines): Extend to show the range of the "normal" data distribution.
+- Standalone Dots (Fliers): These are the outliers. If your max error is 9.12% but the box ends at 2%, that 9.12% will appear as a lonely dot at the top, proving it is a rare exception rather than the rule.
+
+
+4. BLAND-ALTMAN PLOT
+-----------------------------------------------
+Function: A staple in medical and biophysical statistics. Instead of just looking at accuracy, it evaluates whether the magnitude of the error changes depending on the size of the actual measurement.
+
+How to Read it:
+- X-Axis: The average of the True and Predicted values (representing the estimated true size/value of the property).
+- Y-Axis: The Difference (Predicted minus True). A perfect prediction sits at exactly 0 on the Y-axis.
+- Solid Red Line (Mean Difference): Shows the overall bias. If this line is at +0.5, the model overpredicts by 0.5 units on average.
+- Dashed Gray Lines (Limits of Agreement): Represent +/- 1.96 Standard Deviations. Statistically, 95% of all errors should fall between these two lines.
+
+Interpretation:
+- Look for patterns. If the dots spread out into a "fan" shape or a slope as you move to the right along the X-axis, it means the model becomes less accurate when the property (like diameter or refractive index) gets larger. Ideally, dots should look like a random cloud scattered evenly around the red line.

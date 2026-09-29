@@ -21,3 +21,8 @@ __pycache__/
 *.onnx
 *.pdf
 *.odt
+.venv
+
+# Doxygen documentation output
+html/
+latex/

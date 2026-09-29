@@ -1,158 +1,116 @@
 from __future__ import annotations
 from src.utils.paths import rel_to_root
-from occlusion import *
-from frequency import *
-from GradCAM import *
+from src.model.experiments.tests_helper import *
 LABEL_KEYS = ["diameter", "thickness", "ratio", "ref_index"]
 
 
 
 
 
-def cor_run():
+def cor_run_single_label_ensemble():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    ## Ref index new data
+    ckpt_paths = [
+        rel_to_root(
+            "outputs/models/multyLabelCNN/refInex_newData/1,2-16,9(noise)35/ref_multyLabelCNN_ref_e35_lr0.001_bs64_val0.000255.pt"),
+        rel_to_root(
+            "outputs/models/multyLabelCNN/refInex_newData/1,4-9,6(noise)35/ref_multyLabelCNN_ref_e35_lr0.001_bs64_val0.000208.pt"),
+        rel_to_root(
+            "outputs/models/multyLabelCNN/refInex_newData/1,4-17,0(noise)45/ref_multyLabelCNN_ref_e45_lr0.001_bs64_val0.000202.pt"),
+        rel_to_root(
+            "outputs/models/multyLabelCNN/refInex_newData/1,5-17,2(noise)41/ref_multyLabelCNN_ref_e41_lr0.001_bs64_val0.000198.pt"),
+        rel_to_root(
+            "outputs/models/multyLabelCNN/refInex_newData/1,7-16,2(noise)36/ref_multyLabelCNN_ref_e36_lr0.001_bs64_val0.000254.pt"),
+        rel_to_root(
+            "outputs/models/multyLabelCNN/refInex_newData/1,7-16,2(noise)41/ref_multyLabelCNN_ref_e41_lr0.001_bs64_val0.000175.pt"),
+        rel_to_root(
+            "outputs/models/multyLabelCNN/refInex_newData/1,7-16,7(noise)35/ref_multyLabelCNN_ref_e35_lr0.001_bs64_val0.000248.pt"),
+        rel_to_root(
+            "outputs/models/multyLabelCNN/refInex_newData/2,2-15,4(noise)43/ref_multyLabelCNN_ref_e43_lr0.001_bs64_val0.000194.pt"),
+        rel_to_root(
+            "outputs/models/multyLabelCNN/refInex_newData/2,2-16,3(no_noise)21/ref_multyLabelCNN_ref_e21_lr0.001_bs64_val0.000446.pt"),
+        rel_to_root(
+            "outputs/models/multyLabelCNN/refInex_newData/2,1-17,1(noise)48/ref_multyLabelCNN_ref_e48_lr0.001_bs64_val0.000215.pt"),
+        rel_to_root(
+            "outputs/models/multyLabelCNN/refInex_newData/1,7-18,0(noise)30/ref_multyLabelCNN_ref_e30_lr0.001_bs64_val0.000322.pt"),
+
+    ]
+    ### Ref Index ####
+    # ckpt_paths = [
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/0,9-7,8/ref_multyLabelCNN_ref_e25_lr0.001_bs32_val0.000283.pt"),
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/1,2-6,4/ref_multyLabelCNN_ref_e43_lr0.001_bs32_val0.001069.pt"),
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/1,4-13,0/ref_multyLabelCNN_ref_e23_lr0.001_bs32_val0.000312.pt"),
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/1,6-8,6/ref_multyLabelCNN_ref_e37_lr0.001_bs32_val0.000381.pt"),
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/1,9-9,9/ref_multyLabelCNN_ref_e24_lr0.001_bs32_val0.000346.pt"),
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/1,1-22,3/ref_multyLabelCNN_ref_e44_lr0.001_bs32_val0.000560.pt"),
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/1,1-23/ref_multyLabelCNN_ref_e28_lr0.001_bs32_val0.000580.pt"),
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/1,7-10,5/ref_multyLabelCNN_ref_e25_lr0.001_bs32_val0.000257.pt"),
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/2,5-10,2/ref_multyLabelCNN_ref_e34_lr0.001_bs32_val0.000300.pt"),
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/2,1-10,8/ref_multyLabelCNN_ref_e39_lr0.001_bs32_val0.001834.pt"),
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/1,4-18,3/ref_multyLabelCNN_ref_e30_lr0.001_bs32_val0.000433.pt"),
+    #
+    # ]
+
+    # ckpt_paths = [
+    #     rel_to_root(
+    #         "outputs/models/multyLabelCNN/RefIndex/0,9-7,8/ref_multyLabelCNN_ref_e25_lr0.001_bs32_val0.000283.pt"),
+    #
+    #     ]
+
+    # 2. Load all models into a list
+    models = []
+    for path in ckpt_paths:
+        print(f"Loading model: {path}")
+        model = torch.load(path, map_location="cpu", weights_only=False).to(device).eval()
+        models.append(model)
+
+    data_dir_good = rel_to_root("Data/test_data/rs")
+    out_pct = rel_to_root("outputs/test_graphs/single_ensemble_avg_pct_error.png")
+
+    # 3. Choose which label this ensemble was trained for:
+    # 0 = diameter, 1 = thickness, 2 = ratio, 3 = ref_index
+    CURRENT_TARGET = 3
+
+    # 4. Pass the LIST of models to the new testing function
+    test_single_label_ensemble(
+        models=models,
+        dir_path=data_dir_good,
+        save_path_pct=str(out_pct),
+        thresh=99,
+        block=False,
+        jitter=False,
+        noise=False,
+        normalize=True,
+        trimed=True,              # <--- Your trimmed mean logic is active!
+        target_idx=CURRENT_TARGET,
+        min_val=15# <--- Passed down to the test loop
+    )
+
+def single_label():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     ckpt_path = rel_to_root(
-        "outputs/models/FlexibleCNN/noise_BEST_old6_20251105-112939_FlexibleCNN_e25_lr0.001_bs32_wd0.0_seed42_dsmanual/FlexibleCNN_e25_lr0.001_bs32_val0.004819.pt")
+        "outputs/models/multyLabelCNN/6,6-107,9(no_noise)74/ratio_multyLabelCNN_ratio_e74_lr0.001_bs64_val0.041430.pt")
     ae_path = rel_to_root(
         "outputs/models/FCAutoencoder/cor_noise_20251123-193317_FCAutoencoder_e25_lr0.001_bs32_wd0.0_seed42_dsmanual/autoencoder_final.pt")
-    data_dir_good = rel_to_root("Data/res_to_test")
+    data_dir_good = rel_to_root("Data/test_data/rs")
     out_pct = rel_to_root("outputs/test_graphs/extra_runs_avg_pct_error.png")
     model = torch.load(ckpt_path, map_location="cpu", weights_only=False).to(device).eval()
-    ae_model =    torch.load(ae_path, map_location="cpu", weights_only=False).to(device).eval()
-
-    test_avg_error(model,data_dir_good,str(out_pct),99,block=False,jitter=False,noise=True,)
-
-def run_occlusion_demo(ckpt_path: str, sample_path: str,per_label: bool,avg:bool):
-    # 1) load model
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = torch.load(rel_to_root(ckpt_path),weights_only=False, map_location="cpu").to(device).eval()
-
-    # 2) load one image + labels (no extra normalization here)
-    sample_path = rel_to_root((sample_path))
-    if not avg:
-        img, lbl_true = load_rbc_txt_image_and_labels(sample_path)  # img: [1,50,50], lbl_true: [4]
-
-
-    k = 5
-    stride = 2
-    if per_label and (not avg):
-        heat, base_vec = occlusion_map_per_label(
-            model=model,
-            img=img,
-            lbl_true=lbl_true,
-            k=k,
-            stride=stride,
-            fill="mean",  # neutral occlusion
-            eps=1e-8
-        )
-
-        print("Baseline per-label % error:",
-              {k: float(v) for k, v in zip(LABEL_KEYS, base_vec.tolist())})
-
-
-        plot_occlusion_maps_per_label(
-            img=img,
-            heat=heat,
-            k=k,
-            stride=stride,
-            label_idx=None,  # None -> all labels
-        )
-
-
-
-    elif not per_label and not avg:
-        heat, baseline = occlusion_map_simple(
-            model=model,
-            img=img,
-            lbl_true=lbl_true,
-            k=k,
-            stride=stride,
-            fill="mean",      # neutral occlusion
-            eps=1e-8
-        )
-        print(f"Baseline macro % error (no occlusion): {baseline:.2f}%")
-
-        # 4) plot + (optionally) save
-        plot_occlusion_map_simple(
-            img=img,
-            heat=heat,
-            k=k,
-            stride=stride,
-            title="Occlusion Δ% (macro)",
-
-        )
-    elif per_label and avg:
-        avg_heat, avg_base, n, ref_img = occlusion_map_per_label_avg(
-            model,
-            dir_path=sample_path,
-            k=k,
-            stride=stride,
-            fill="mean",  # neutral occlusion
-            eps=1e-8,
-        )
-
-
-
-
-        plot_occlusion_maps_per_label(
-            img=ref_img,
-            heat=avg_heat,
-            k=k,
-            stride=stride,
-            label_idx=None,  # None -> show all 4 label maps
-
-        )
-    else:
-        avg_heat, avg_baseline, n, ref_img = occlusion_map_simple_avg(
-            model,
-            dir_path=sample_path,
-            k=k,
-            stride=stride,
-            fill="mean",
-            eps=1e-8,
-        )
-        print(f"Images averaged: {n} | Avg baseline macro %% error: {avg_baseline:.2f}%")
-
-        # 4) plot + save
-        out_png = rel_to_root("outputs/occlusion/avg_occlusion_macro.png")
-        plot_occlusion_map_simple(
-            img=ref_img,
-            heat=avg_heat,
-            k=k,
-            stride=stride,
-            title="Average Occlusion Δ% (macro)",
-        )
-
-def frequency_test():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    ckpt_path = rel_to_root(
-        "outputs/models/FlexibleCNN/noise_BEST_old6_20251105-112939_FlexibleCNN_e25_lr0.001_bs32_wd0.0_seed42_dsmanual/FlexibleCNN_e25_lr0.001_bs32_val0.004819.pt")
-    model = torch.load(ckpt_path, map_location="cpu", weights_only=False).to(device).eval()  # <— full module
-    data_dir = rel_to_root("Data/extra_runs_good_img")
-
-    test_gaussian_blur_sweep(model,data_dir)
-    #test_unsharp_sweep(model,data_dir)
-
-def run_grad_Cam():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    ckpt_path = rel_to_root(
-        "outputs/models/FlexibleCNN/BEST_old6_20251104-070605_FlexibleCNN_e25_lr0.001_bs32_wd0.0_seed42_dsmanual/FlexibleCNN_e25_lr0.001_bs32_val0.004462.pt")
-    model = torch.load(ckpt_path, map_location="cpu", weights_only=False).to(device).eval()  # <— full module
-    img_path = rel_to_root("Data/res_to_test/06_097761827746a.f06")
-    img, lbl = load_rbc_txt_image_and_labels(img_path)  # img: [1,50,50], lbl_true: [4]
-    img = img.unsqueeze(0).to(device)
-    gradcam = GradCAM(model)
-    k=3
-    cam = gradcam(img,target_index=k)
-
-    plot_grad_cam(cam, img, k)
-
-
-
-
-
+    # ae_model =    torch.load(ae_path, map_location="cpu", weights_only=False).to(device).eval()
+    ## "diameter", "thickness", "ratio", "ref_index"
+    test_single_label(model,data_dir_good,str(out_pct),20,block=False,jitter=False,noise=False,normalize=True,target_idx=2)
 
 if __name__ == "__main__":
     #print (a_infer_ref_index_from_path(Path("../../../Data/extra_runs_for_check/20_0737523754741a.f06")))
@@ -164,10 +122,15 @@ if __name__ == "__main__":
     #     sample_path="Data/extra_runs_good_img",per_label=False,avg=True,
     # )
 
+    #cor_run_single_label_ensemble()
+    single_label()
+
+
+    #cor_run_ensemble()
     #cor_run()
-    run_grad_Cam()
+    #run_grad_Cam()
     #frequency_test()
-    #run_ae_test()
+
 
 
 

@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from src.utils.paths import rel_to_root
+
 # Load pixel values, converting Fortran-style "D" to "E" and scaling to 0–255
-with open('../../documentation/runs_vs_refractive_index_at_he_ne/data.txt', 'r') as file:
+with open(rel_to_root('Data/test_data/rs/02581a.f06'), 'r') as file:
     pixel_values = [
         float(line.strip().replace('D', 'E')) for line in file if line.strip()
     ]

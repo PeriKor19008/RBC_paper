@@ -6,7 +6,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_MODELS_DIR = str(Path(__file__).resolve().parents[3] / "outputs" / "models")
 
 def start_run(model, num_epochs, learning_rate, batch_size, layers,
-               base_models_dir=_DEFAULT_MODELS_DIR, extra_info=None):
+               base_models_dir=_DEFAULT_MODELS_DIR, extra_info=None,seed=None):
     Path(_DEFAULT_MODELS_DIR).mkdir(parents=True, exist_ok=True)
     arch_name = type(model).__name__
     cfg = RunConfig(
@@ -14,7 +14,8 @@ def start_run(model, num_epochs, learning_rate, batch_size, layers,
         epochs=num_epochs,
         lr=learning_rate,
         batch_size=batch_size,
-        notes=f"layers={layers}"
+        notes=f"layers={layers}",
+        seed=seed
     )
 
     run_id = make_run_id(cfg, ds_fingerprint="manual")

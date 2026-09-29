@@ -1,9 +1,12 @@
 import matplotlib.pyplot as plt
+from sympy import false
+
 from src.model.noise import *
 from Data.DB_setup.image_db_utils import ImageDB
+from src.utils.norm_cam_transform import *
 
 
-def display_image(image_data, use_log=True,noise:bool=False):
+def display_image(image_data, use_log=True,noise:bool=False,normalize:bool=False,burn:bool=False):
 
 
     image_text = image_data['log_image'] if use_log else image_data['regular_image']
@@ -11,7 +14,11 @@ def display_image(image_data, use_log=True,noise:bool=False):
 
     if len(values) != 2500:
         raise ValueError("Expected 2500 values")
-
+    if normalize == 1:
+        sim = Simulate16BitCamera(global_max=get_or_compute_global_max(),burn=True,burn_opt=0)
+        t_img = torch.tensor(values, dtype=torch.float32)
+        t_img = sim(t_img)
+        values = t_img.numpy()
     image_array = np.array(values).reshape((50, 50))
     if noise:
         x = torch.from_numpy(image_array).unsqueeze(0)
@@ -28,11 +35,11 @@ def display_image(image_data, use_log=True,noise:bool=False):
     plt.imshow(image_array, cmap='gray')
     plt.title(title)
     plt.colorbar()
-    plt.figure()
+    #plt.figure()
 
 
 
-def plot_image_as_line(image_data, use_log=False):
+def plot_image_as_line(image_data, use_log=False,normalize:bool=False):
     if not image_data:
         print(" No image data found.")
         return
@@ -42,6 +49,11 @@ def plot_image_as_line(image_data, use_log=False):
 
     if len(values) != 2500:
         raise ValueError("Expected 2500 values")
+    if normalize == 1:
+        sim = Simulate16BitCamera(global_max=get_or_compute_global_max(),burn=True,burn_opt=1)
+        t_img = torch.tensor(values, dtype=torch.float32)
+        t_img = sim(t_img)
+        values = t_img.numpy()
 
     plt.figure(figsize=(10, 4))
     plt.plot(range(len(values)), values, label='Image data')
@@ -50,18 +62,18 @@ def plot_image_as_line(image_data, use_log=False):
     plt.title('Image Data as Line Plot')
     plt.grid(True)
     plt.tight_layout()
-    plt.figure()
+    #plt.figure()
     plt.show()
 
 # === Example usage ===
 if __name__ == '__main__':
     db = ImageDB()
-    image = db.search_image_by_dtr(7000,2250,600)
+    image = db.search_image_by_dtr(7000,2750,600)
 
     db.close()
 
     #plot_image_as_line(image, use_log=True)
-    display_image(image,use_log=True,noise=False)
-    display_image(image,use_log=True,noise=True)
-    plot_image_as_line(image,use_log=False)
+    display_image(image,use_log=False,noise=False,normalize=True,burn=True)
+    #display_image(image,use_log=True,noise=True)
+    plot_image_as_line(image,use_log=False,normalize=True)
 
